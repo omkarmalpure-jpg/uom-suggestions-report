@@ -2331,21 +2331,16 @@ Note
 <section id="the-fileuom-check" class="level2" data-number="4">
 <h2 data-number="4" class="anchored" data-anchor-id="the-fileuom-check"><span class="header-section-number">4</span> The FileUOM Check</h2>
 <p>Separately, there is a second trigger. The raw purchase file sometimes has a UOM column — like the supplier wrote <code>&quot;CS&quot;</code> in the file. The engine calls this the <strong>FileUOM</strong>.</p>
-<p><strong>Check 1 — FileUOM proximity check:</strong></p>
-<p>The engine looks up the FileUOM in the same candidate pool (DBSCAN thresholds and KnownProductUOMs). If the FileUOM candidate:</p>
-<ol type="1">
-<li>Is actually present in the candidate pool (has historical price data), <strong>and</strong></li>
-<li>Scores <strong>≥ 50% of the winner’s score</strong> (meets the same competition threshold), <strong>and</strong></li>
-<li>Is different from the engine’s top scorer</li>
-</ol>
-<p>…then it is flagged for analyst review. The FileUOM candidate appears in the suggestion list with a note explaining it came from the file label.</p>
+<p>The engine checks for it <strong>first</strong>, before looking at general competition:</p>
+<p><strong>Step 1 — FileUOM check (runs first):</strong></p>
+<p>The engine looks up the FileUOM in the same candidate pool (DBSCAN thresholds and KnownProductUOMs). If the FileUOM candidate is present, scores <strong>≥ 50% of the winner</strong>, and is different from the winner → a suggestion is created with the <strong>FileUOM candidate pinned at the top</strong>. All other candidates from the pool appear below it sorted by score, so the analyst can still pick any of them.</p>
 <pre><code>Winner score = 0.88  →  competition threshold = 0.88 × 0.50 = 0.44
 
-FileUOM candidate score = 0.50  →  0.50 ≥ 0.44  →  Check 1 passes
-FileUOM candidate score = 0.30  →  0.30 &lt; 0.44  →  Check 1 fails, ignored</code></pre>
-<p><strong>Check 2 — General competition:</strong></p>
-<p>Even if there is no FileUOM in the file, the same 50% threshold applies to every other candidate. If any non-winner UOM scores ≥ 50% of the winner, the row is flagged.</p>
-<p>Both checks use the <strong>same threshold</strong> (<code>winnerScore × 0.50</code>) — there is no separate gate or score multiplier. The FileUOM check is simply whether the file-labeled candidate specifically crosses that line.</p>
+FileUOM score = 0.50  →  0.50 ≥ 0.44  →  FileUOM check passes
+                           FileUOM pinned as top suggestion, others listed below</code></pre>
+<p>If FileUOM scores below the threshold, the file label is ignored — it has no statistical support and is likely a garbage label from the supplier.</p>
+<p><strong>Step 2 — General competition (only if Step 1 didn’t trigger):</strong></p>
+<p>If there is no FileUOM in the file, or the FileUOM check failed, the engine checks whether any other candidate scores ≥ 50% of the winner. If yes, all candidates are listed as suggestions sorted by score.</p>
 <div class="callout callout-style-default callout-note callout-titled">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
@@ -2356,12 +2351,9 @@ Note
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p><strong>Why 50%?</strong> The threshold is intentionally permissive. A runner-up at half the winner’s score still represents real statistical uncertainty — the engine is twice as confident in the winner, but that margin alone does not justify auto-assigning in a high-stakes data pipeline. The 50% value is a tunable hyperparameter and should be revisited based on analyst acceptance/rejection rates over time.</p>
+<p><strong>Why 50%?</strong> A runner-up at half the winner’s score still represents real statistical uncertainty — the engine is twice as confident in the winner, but that margin alone does not justify auto-assigning in a high-stakes data pipeline. The 50% value is a tunable hyperparameter and should be revisited based on analyst acceptance/rejection rates over time.</p>
 </div>
 </div>
-<section id="what-happens-when-fileuom-scores-below-the-threshold" class="level3" data-number="4.1">
-<h3 data-number="4.1" class="anchored" data-anchor-id="what-happens-when-fileuom-scores-below-the-threshold"><span class="header-section-number">4.1</span> What Happens When FileUOM Scores Below the Threshold</h3>
-<p>If the FileUOM candidate’s score is below <code>winnerScore × 0.50</code>, the file label is ignored entirely. A UOM that scores this low relative to the winner has essentially no statistical support, and is likely a garbage label or data entry error from the supplier.</p>
 <table class="caption-top table">
 <colgroup>
 <col style="width: 77%">
@@ -2376,15 +2368,14 @@ Note
 <tbody>
 <tr class="odd">
 <td>≥ winner × 0.50</td>
-<td>FileUOM candidate surfaced — analyst review triggered</td>
+<td>FileUOM pinned as top suggestion, others listed below</td>
 </tr>
 <tr class="even">
 <td>&lt; winner × 0.50</td>
-<td>Ignored — insufficient statistical support</td>
+<td>Ignored — fall through to general competition check</td>
 </tr>
 </tbody>
 </table>
-</section>
 </section>
 <section id="what-happens-to-the-row" class="level2" data-number="5">
 <h2 data-number="5" class="anchored" data-anchor-id="what-happens-to-the-row"><span class="header-section-number">5</span> What Happens to the Row</h2>
@@ -2528,7 +2519,7 @@ Note
 <p><strong>Winner = CS at 0.88</strong> → Competition threshold = <code>0.88 × 0.50 =</code> <strong>0.44</strong></p>
 <p>BX scored <code>0.50</code> → above 0.44 → <strong>competitive</strong>. The engine checks: is BX present in DBSCAN thresholds or KnownProductUOMs? Yes. Is it different from the winner? Yes. Is its score ≥ 50% of winner? Yes (<code>0.50 ≥ 0.44</code>). <strong>Check 1 passes.</strong></p>
 <div class="result-box">
-<p><strong>Result — Suggestion via FileUOM check:</strong> <code>fileUomTriggered = true</code> → flagged for analyst review · BX and CS both inserted into <code>UOMSuggestion</code> sorted by score · BX reason: <em>“FileUOM ‘BX’ found in candidate list (DBSCAN or KnownProductUOMs). Score 0.500 is within 50% of winner score 0.880.”</em> · Analyst sees: <em>“File says BX, scoring also says BX is plausible. Which is correct?”</em></p>
+<p><strong>Result — Suggestion via FileUOM check:</strong> <code>fileUomTriggered = true</code> → BX pinned as <strong>top suggestion</strong> with reason: <em>“FileUOM ‘BX’ found in candidate list. Score 0.500 is within 50% of winner score 0.880 — surfaced first for analyst review.”</em> · CS listed below (score 0.880) · Analyst can accept BX, or scroll down and accept CS instead.</p>
 </div>
 <p>If BX had scored <code>0.30</code> instead, the check would fail (<code>0.30 &lt; 0.44</code>) — the file label would be silently ignored and CS would be auto-assigned with no suggestion.</p>
 </section>
