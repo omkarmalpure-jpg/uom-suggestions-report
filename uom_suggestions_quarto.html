@@ -2340,6 +2340,52 @@ Note
 <blockquote class="blockquote">
 <p><em>“The file said this — do you agree?”</em></p>
 </blockquote>
+<section id="the-0.30-minimum-gate" class="level3" data-number="4.1">
+<h3 data-number="4.1" class="anchored" data-anchor-id="the-0.30-minimum-gate"><span class="header-section-number">4.1</span> The 0.30 Minimum Gate</h3>
+<p>The FileUOM boost only triggers if the FileUOM candidate’s raw score is <strong>≥ 0.30</strong> — the same threshold used to consider any UOM “recognized” at all.</p>
+<pre><code>FILE_UOM_MIN_SCORE = 0.30</code></pre>
+<p>If FileUOM scores below 0.30, the engine ignores the file label entirely — because a UOM that scores below the recognition floor has no statistical support and is likely noise or a garbage label from the supplier.</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>FileUOM raw score</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>&lt; 0.30</td>
+<td>Ignored — no statistical support, label treated as noise</td>
+</tr>
+<tr class="even">
+<td>≥ 0.30</td>
+<td>Boosted by 1.5× → forced suggestion for analyst review</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="why-1.5-the-mathematical-symmetry" class="level3" data-number="4.2">
+<h3 data-number="4.2" class="anchored" data-anchor-id="why-1.5-the-mathematical-symmetry"><span class="header-section-number">4.2</span> Why 1.5× — The Mathematical Symmetry</h3>
+<p>The 1.5 multiplier is not arbitrary — it mirrors the competition threshold divisor exactly:</p>
+<pre><code>Competition window  = winner ÷ 1.5  → candidates within 33% of winner
+FileUOM boost       = raw score × 1.5  → 50% increase
+
+33% = 50% ÷ 1.5   (same constant, two sides of the same coin)</code></pre>
+<p>A FileUOM boosted by 50% is designed to cross exactly into the competition window — the boost is the precise inverse of the competition divisor. If the file label scores anywhere near the competition boundary, the 1.5× lift guarantees it surfaces as the top suggestion.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>These thresholds (0.30 minimum, 1.5× boost, 1.5 competition divisor) are <strong>tunable hyperparameters</strong>, not mathematically proven optima. They were chosen empirically as a reasonable starting point and should be revisited based on analyst acceptance/rejection rates over time.</p>
+</div>
+</div>
+</section>
 </section>
 <section id="what-happens-to-the-row" class="level2" data-number="5">
 <h2 data-number="5" class="anchored" data-anchor-id="what-happens-to-the-row"><span class="header-section-number">5</span> What Happens to the Row</h2>
