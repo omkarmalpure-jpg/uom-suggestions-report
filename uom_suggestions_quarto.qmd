@@ -1,0 +1,184 @@
+---
+title: "UOM Suggestion Logic in the Recognition Pipeline"
+format:
+  html:
+    theme: cosmo
+    toc: true
+    toc-location: left
+    toc-depth: 2
+    toc-title: "Contents"
+    number-sections: true
+    smooth-scroll: true
+    self-contained: true
+    css: styles.css
+---
+
+```{=html}
+<div class="hero-banner">
+  <h1>UOM Suggestion Logic in the<br>Recognition Pipeline</h1>
+  <hr class="hero-divider">
+  <p class="hero-subtitle">How the engine decides when to flag a row for analyst review</p>
+</div>
+
+<div class="meta-row">
+  <div class="meta-item">
+    <span class="meta-label">Author</span>
+    <span class="meta-value">Omkar Malpure</span>
+  </div>
+  <div class="meta-item">
+    <span class="meta-label">Published</span>
+    <span class="meta-value">May 27, 2026</span>
+  </div>
+</div>
+
+<div class="curvo-logo-block">
+  <img src="curvo.png" alt="Curvo" class="curvo-logo-img"/>
+</div>
+```
+
+## The Big Picture — Why Suggestions Exist
+
+The engine's job is to figure out what UOM (unit of measure) a purchase line is in. For example, was this box of gloves bought as a **case of 200** or a **box of 100**?
+
+Most of the time (Steps 1–4) it can figure this out exactly from price history. But in **Step 5 (DBSCAN)**, it's doing statistical guessing — it looks at what price ranges this product has been sold at in other UOMs and asks:
+
+> *"Which UOM does this price fit into?"*
+
+The problem is: sometimes the price fits into **two UOMs equally well**. In that case, the engine cannot confidently pick one — so instead of guessing wrong, it **flags it for a human** to review.
+
+That flagged row is what becomes a **suggestion**.
+
+## The Scoring System
+
+Every candidate UOM gets a **proximity score** between 0 and 1:
+
+| Score | Meaning |
+|-------|---------|
+| **1.0** | Price fits perfectly into this UOM's known price range |
+| **0.5** | Price is somewhat close to this UOM's range |
+| **0.0** | Price has nothing to do with this UOM |
+
+The engine picks the **highest scorer as the winner**. But then it asks:
+
+> *Is anyone else close enough that I shouldn't be confident?*
+
+## The Competition Rule
+
+**Competition threshold = winner's score ÷ 1.5**
+
+If any other candidate scores **above this threshold**, the engine considers it too close to call.
+
+```
+Winner score = 0.82
+Competition threshold = 0.82 / 1.5 = 0.55
+
+Any other candidate ≥ 0.55?
+  YES → too close, flag for human review  (suggestion)
+  NO  → safe to auto-assign              (recognized)
+```
+
+::: {.callout-note}
+**Think of it like this:** if the winner is at 82% confidence and the runner-up is at 79%, the engine says *"I'm not sure enough — let a human decide."*
+:::
+
+## The FileUOM Boost Rule
+
+Separately, there is a second trigger. The raw purchase file sometimes has a UOM column — like the supplier wrote `"CS"` in the file. The engine calls this the **FileUOM**.
+
+Even if the engine's scoring picked a clear winner, if the **FileUOM points to a different UOM** that also has a reasonable score (≥ 0.15), the engine says:
+
+> *"The file itself is labeling this differently from what I calculated. That's suspicious. A human should look at this."*
+
+It gives the FileUOM candidate a **1.5× score boost** and **always forces a suggestion**, even if there would have been no competition otherwise.
+
+The FileUOM candidate becomes the **top suggestion** shown first to the analyst, because the engine wants to highlight:
+
+> *"The file said this — do you agree?"*
+
+## What Happens to the Row
+
+In both cases — competition or FileUOM conflict — the result is the same:
+
+| What | Value |
+|------|-------|
+| `RecognizedUnitOfMeasureID` in DataLineEnriched | `NULL` — nothing auto-assigned |
+| All competing candidates | Inserted into `UOMSuggestion` table |
+| Row in UI | Shows in **Suggestions** tab |
+| Top suggestion shown | Highest confidence candidate |
+
+- **Analyst accepts** → suggestion deleted, value written to `DataLineEnriched` → row moves to Recognized tab
+- **Analyst rejects** → suggestion marked `IsRejected = 1` → next best candidate surfaces automatically
+
+## Example 1 — Competition
+
+**Two UOMs both fit the price equally well.**
+
+**Line:** Surgical gloves, PriceUOM = `$48.00`
+
+| UOM | Qty per UOM | Known price range | Score |
+|-----|------------|-------------------|-------|
+| CS  | 200        | $40 – $55         | **0.82** |
+| BX  | 100        | $44 – $52         | 0.79 |
+| EA  | 1          | $0.20 – $0.60     | 0.10 |
+
+**Winner = CS at 0.82** → Competition threshold = `0.82 / 1.5 =` **0.55**
+
+- BX scored `0.79` → **above 0.55 → competition exists** ✓
+- EA scored `0.10` → below 0.55, not a competitor ✗
+
+::: {.result-box}
+**Result — Suggestion created:**
+`isRecognized = false` · CS and BX both inserted into `UOMSuggestion` · CS is top suggestion (0.82), BX is second (0.79) · Analyst sees: *"We think CS/200 — but BX/100 is also plausible. You decide."*
+:::
+
+## Example 2 — No Competition
+
+**Engine is confident, auto-assigns with no suggestion.**
+
+**Line:** Paper towels, PriceUOM = `$120.00`
+
+| UOM | Known price range | Score |
+|-----|-------------------|-------|
+| CS  | $110 – $130       | **0.91** |
+| EA  | $1.00 – $3.00     | 0.05 |
+
+**Winner = CS at 0.91** → Competition threshold = `0.91 / 1.5 =` **0.61**
+
+- EA scored `0.05` → **below 0.61 → no competition** ✗
+
+::: {.result-box}
+**Result — Auto-recognized:**
+`isRecognized = true` · `RecognizedUnitOfMeasureID = CS` written directly to `DataLineEnriched` · No suggestion created — row appears in Recognized tab · Analyst doesn't need to do anything.
+:::
+
+## Example 3 — FileUOM Boost
+
+**File label disagrees with the engine's top scorer.**
+
+**Line:** IV bags, PriceUOM = `$95.00`, FileUOM column = **`"BX"`**
+
+| UOM | Known price range | Score |
+|-----|-------------------|-------|
+| CS  | $85 – $105        | **0.88** |
+| BX  | $88 – $100        | 0.40 |
+
+**Winner = CS at 0.88** → Competition threshold = `0.88 / 1.5 =` **0.59**
+
+BX scored `0.40` → below 0.59 → **normally no competition**. Without FileUOM, CS would be auto-assigned.
+
+**BUT** — FileUOM = `"BX"`, and BX is a known candidate with score `0.40 ≥ 0.15`. BX gets boosted: `0.40 × 1.5 = 0.60`.
+
+::: {.result-box}
+**Result — Forced suggestion via FileUOM boost:**
+`fileUomBoosted = true` → forced to suggestion · BX becomes **top suggestion**: *"FileUOM 'BX' found in candidate list. Raw score 0.40 boosted to 0.60. Auto-winner was CS — sent for analyst review."* · CS is second suggestion · Analyst sees: *"File says BX, but our scoring says CS. Which is correct?"*
+:::
+
+## Summary
+
+| Situation | What the engine does |
+|-----------|---------------------|
+| Steps 1–4 match | Auto-recognizes, no suggestion |
+| Step 5: clear winner, no close runners-up | Auto-recognizes, no suggestion |
+| Step 5: runner-up within 33% of winner | **Suggestion — analyst picks** |
+| Step 5: FileUOM disagrees with top scorer | **Suggestion — analyst picks** |
+| Score below 0.30 | Nothing — row stays unrecognized |

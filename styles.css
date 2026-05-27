@@ -1,0 +1,238 @@
+/* ── Hide Quarto's auto-generated title block ─────────────── */
+#title-block-header,
+.quarto-title-block,
+.quarto-title,
+.quarto-title-meta {
+  display: none !important;
+}
+
+/* ── Google Fonts ─────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+/* ── Base ─────────────────────────────────────────────────── */
+body, p, li, td {
+  font-family: "Inter", "Segoe UI", sans-serif;
+  font-size: 15px;
+  color: #1a2030;
+  line-height: 1.7;
+}
+
+/* ── Hero Header ──────────────────────────────────────────── */
+.hero-banner {
+  background: linear-gradient(to right, #0c2040 0%, #1155bb 55%, #3a8ee6 100%);
+  padding: 3rem 3rem 2.5rem 3rem;
+  margin: -2rem -2rem 0 -2rem;
+  position: relative;
+}
+
+.hero-banner h1 {
+  font-family: "Inter", sans-serif;
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: #ffffff !important;
+  line-height: 1.2;
+  margin: 0 0 0.6rem 0;
+  border: none !important;
+  padding: 0 !important;
+  max-width: 660px;
+}
+
+.hero-banner .hero-subtitle {
+  font-size: 1rem;
+  color: rgba(255,255,255,0.82);
+  font-style: italic;
+  margin: 0;
+  max-width: 580px;
+  font-weight: 400;
+}
+
+.hero-divider {
+  border: none;
+  border-top: 1px solid rgba(255,255,255,0.3);
+  margin: 0.9rem 0 0.7rem 0;
+}
+
+/* ── Author / Published meta ──────────────────────────────── */
+.meta-row {
+  display: flex;
+  gap: 4rem;
+  padding: 1.6rem 3rem 1.6rem 3rem;
+  border-bottom: 1px solid #e8ecf2;
+  background: #ffffff;
+}
+
+.meta-item .meta-label {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #8899b0;
+  margin-bottom: 0.25rem;
+}
+
+.meta-item .meta-value {
+  font-size: 0.95rem;
+  color: #1a2030;
+  font-weight: 500;
+}
+
+/* ── Curvo Logo ───────────────────────────────────────────── */
+.curvo-logo-block {
+  padding: 1.8rem 3rem 0.5rem 3rem;
+}
+
+.curvo-logo-img {
+  height: 52px;
+  width: auto;
+  display: block;
+}
+
+/* ── TOC Sidebar ──────────────────────────────────────────── */
+#quarto-sidebar,
+.sidebar {
+  background: #f9fafb !important;
+  border-right: 1px solid #e4e8f0 !important;
+  padding-top: 1.5rem !important;
+}
+
+.sidebar-title,
+#quarto-sidebar .sidebar-title {
+  font-size: 0.68rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.12em !important;
+  text-transform: uppercase !important;
+  color: #8899b0 !important;
+  margin-bottom: 0.6rem !important;
+  padding-left: 1rem;
+}
+
+.sidebar-item a,
+#quarto-sidebar nav a,
+.sidebar nav a {
+  font-size: 0.82rem !important;
+  color: #556070 !important;
+  text-decoration: none !important;
+  display: block;
+  padding: 0.22rem 1rem !important;
+  border-left: 2px solid transparent;
+  line-height: 1.4;
+}
+
+.sidebar-item a:hover,
+#quarto-sidebar nav a:hover {
+  color: #1a2030 !important;
+}
+
+.sidebar-item a.active,
+#quarto-sidebar nav a.active,
+.active > a {
+  color: #1564c8 !important;
+  font-weight: 600 !important;
+  border-left: 2px solid #1564c8 !important;
+}
+
+/* ── Section Headings ─────────────────────────────────────── */
+h2 {
+  font-family: "Inter", sans-serif;
+  font-size: 1.55rem;
+  font-weight: 700;
+  color: #1a2030;
+  margin-top: 2.8rem;
+  margin-bottom: 1rem;
+  border-bottom: 1.5px solid #e4e8f0;
+  padding-bottom: 0.45rem;
+}
+
+h3 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #1a2030;
+  margin-top: 1.6rem;
+}
+
+/* ── Tables ───────────────────────────────────────────────── */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.2rem 0;
+  font-size: 0.875rem;
+}
+
+thead tr {
+  background: #0c2040;
+  color: #ffffff;
+}
+
+thead th {
+  padding: 0.7rem 1.1rem;
+  text-align: left;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  font-size: 0.82rem;
+}
+
+tbody tr {
+  border-bottom: 1px solid #e8ecf2;
+}
+
+tbody tr:nth-child(even) {
+  background: #f7f9fc;
+}
+
+tbody td {
+  padding: 0.6rem 1.1rem;
+  color: #2d3748;
+}
+
+/* ── Callouts ─────────────────────────────────────────────── */
+.callout-note {
+  background: #eef5ff;
+  border-left: 4px solid #1564c8;
+  border-radius: 0 6px 6px 0;
+  padding: 0.9rem 1.2rem;
+  margin: 1.2rem 0;
+  font-size: 0.9rem;
+}
+
+.result-box {
+  background: #f0faf6;
+  border: 1px solid #27ae60;
+  border-radius: 7px;
+  padding: 1rem 1.3rem;
+  margin: 1rem 0;
+  font-size: 0.9rem;
+}
+
+/* ── Code blocks ──────────────────────────────────────────── */
+pre, code {
+  font-family: "Fira Code", "Cascadia Code", "Consolas", monospace;
+  font-size: 0.82rem;
+}
+
+pre {
+  background: #f4f6f9;
+  border: 1px solid #e0e4ec;
+  border-radius: 6px;
+  padding: 1rem 1.2rem;
+  line-height: 1.6;
+}
+
+/* ── Blockquotes ──────────────────────────────────────────── */
+blockquote {
+  border-left: 3px solid #bbc8d8;
+  color: #556070;
+  font-style: italic;
+  padding-left: 1rem;
+  margin-left: 0;
+}
+
+/* ── Main content padding ─────────────────────────────────── */
+main.content {
+  padding-top: 0 !important;
+}
+
+#quarto-document-content {
+  padding-top: 0 !important;
+  margin-top: 0 !important;
+}

@@ -1,0 +1,15 @@
+project:
+  type: default
+  output-dir: _output
+
+format:
+  html:
+    theme: cosmo
+    toc: true
+    toc-location: left
+    toc-depth: 2
+    toc-title: "Contents"
+    number-sections: true
+    smooth-scroll: true
+    self-contained: true
+    css: styles.css
