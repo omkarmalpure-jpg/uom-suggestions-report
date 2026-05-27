@@ -2212,11 +2212,11 @@ body, p, li, td {font-family: "Inter", "Segoe UI", sans-serif;font-size: 15px;co
   <li><a href="#the-big-picture-why-suggestions-exist" id="toc-the-big-picture-why-suggestions-exist" class="nav-link active" data-scroll-target="#the-big-picture-why-suggestions-exist"><span class="header-section-number">1</span> The Big Picture — Why Suggestions Exist</a></li>
   <li><a href="#the-scoring-system" id="toc-the-scoring-system" class="nav-link" data-scroll-target="#the-scoring-system"><span class="header-section-number">2</span> The Scoring System</a></li>
   <li><a href="#the-competition-rule" id="toc-the-competition-rule" class="nav-link" data-scroll-target="#the-competition-rule"><span class="header-section-number">3</span> The Competition Rule</a></li>
-  <li><a href="#the-fileuom-boost-rule" id="toc-the-fileuom-boost-rule" class="nav-link" data-scroll-target="#the-fileuom-boost-rule"><span class="header-section-number">4</span> The FileUOM Boost Rule</a></li>
+  <li><a href="#the-fileuom-check" id="toc-the-fileuom-check" class="nav-link" data-scroll-target="#the-fileuom-check"><span class="header-section-number">4</span> The FileUOM Check</a></li>
   <li><a href="#what-happens-to-the-row" id="toc-what-happens-to-the-row" class="nav-link" data-scroll-target="#what-happens-to-the-row"><span class="header-section-number">5</span> What Happens to the Row</a></li>
   <li><a href="#example-1-competition" id="toc-example-1-competition" class="nav-link" data-scroll-target="#example-1-competition"><span class="header-section-number">6</span> Example 1 — Competition</a></li>
   <li><a href="#example-2-no-competition" id="toc-example-2-no-competition" class="nav-link" data-scroll-target="#example-2-no-competition"><span class="header-section-number">7</span> Example 2 — No Competition</a></li>
-  <li><a href="#example-3-fileuom-boost" id="toc-example-3-fileuom-boost" class="nav-link" data-scroll-target="#example-3-fileuom-boost"><span class="header-section-number">8</span> Example 3 — FileUOM Boost</a></li>
+  <li><a href="#example-3-fileuom-check" id="toc-example-3-fileuom-check" class="nav-link" data-scroll-target="#example-3-fileuom-check"><span class="header-section-number">8</span> Example 3 — FileUOM Check</a></li>
   <li><a href="#summary" id="toc-summary" class="nav-link" data-scroll-target="#summary"><span class="header-section-number">9</span> Summary</a></li>
   </ul>
 </nav>
@@ -2306,12 +2306,12 @@ body, p, li, td {font-family: "Inter", "Segoe UI", sans-serif;font-size: 15px;co
 </section>
 <section id="the-competition-rule" class="level2" data-number="3">
 <h2 data-number="3" class="anchored" data-anchor-id="the-competition-rule"><span class="header-section-number">3</span> The Competition Rule</h2>
-<p><strong>Competition threshold = winner’s score ÷ 1.5</strong></p>
-<p>If any other candidate scores <strong>above this threshold</strong>, the engine considers it too close to call.</p>
+<p><strong>Competition threshold = winner’s score × 0.50</strong></p>
+<p>If any other candidate scores <strong>at or above 50% of the winner’s score</strong>, the engine considers it too close to call.</p>
 <pre><code>Winner score = 0.82
-Competition threshold = 0.82 / 1.5 = 0.55
+Competition threshold = 0.82 × 0.50 = 0.41
 
-Any other candidate ≥ 0.55?
+Any other candidate ≥ 0.41?
   YES → too close, flag for human review  (suggestion)
   NO  → safe to auto-assign              (recognized)</code></pre>
 <div class="callout callout-style-default callout-note callout-titled">
@@ -2324,54 +2324,28 @@ Note
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p><strong>Think of it like this:</strong> if the winner is at 82% confidence and the runner-up is at 79%, the engine says <em>“I’m not sure enough — let a human decide.”</em></p>
+<p><strong>Think of it like this:</strong> the engine will auto-assign only when the winner is genuinely in a class of its own — scoring more than twice what any other candidate scores. If any runner-up reaches even half the winner’s score, it flags for human review.</p>
 </div>
 </div>
 </section>
-<section id="the-fileuom-boost-rule" class="level2" data-number="4">
-<h2 data-number="4" class="anchored" data-anchor-id="the-fileuom-boost-rule"><span class="header-section-number">4</span> The FileUOM Boost Rule</h2>
+<section id="the-fileuom-check" class="level2" data-number="4">
+<h2 data-number="4" class="anchored" data-anchor-id="the-fileuom-check"><span class="header-section-number">4</span> The FileUOM Check</h2>
 <p>Separately, there is a second trigger. The raw purchase file sometimes has a UOM column — like the supplier wrote <code>&quot;CS&quot;</code> in the file. The engine calls this the <strong>FileUOM</strong>.</p>
-<p>Even if the engine’s scoring picked a clear winner, if the <strong>FileUOM points to a different UOM</strong> that also has a reasonable score (≥ 0.15), the engine says:</p>
-<blockquote class="blockquote">
-<p><em>“The file itself is labeling this differently from what I calculated. That’s suspicious. A human should look at this.”</em></p>
-</blockquote>
-<p>It gives the FileUOM candidate a <strong>1.5× score boost</strong> and <strong>always forces a suggestion</strong>, even if there would have been no competition otherwise.</p>
-<p>The FileUOM candidate becomes the <strong>top suggestion</strong> shown first to the analyst, because the engine wants to highlight:</p>
-<blockquote class="blockquote">
-<p><em>“The file said this — do you agree?”</em></p>
-</blockquote>
-<section id="the-0.30-minimum-gate" class="level3" data-number="4.1">
-<h3 data-number="4.1" class="anchored" data-anchor-id="the-0.30-minimum-gate"><span class="header-section-number">4.1</span> The 0.30 Minimum Gate</h3>
-<p>The FileUOM boost only triggers if the FileUOM candidate’s raw score is <strong>≥ 0.30</strong> — the same threshold used to consider any UOM “recognized” at all.</p>
-<pre><code>FILE_UOM_MIN_SCORE = 0.30</code></pre>
-<p>If FileUOM scores below 0.30, the engine ignores the file label entirely — because a UOM that scores below the recognition floor has no statistical support and is likely noise or a garbage label from the supplier.</p>
-<table class="caption-top table">
-<thead>
-<tr class="header">
-<th>FileUOM raw score</th>
-<th>Result</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>&lt; 0.30</td>
-<td>Ignored — no statistical support, label treated as noise</td>
-</tr>
-<tr class="even">
-<td>≥ 0.30</td>
-<td>Boosted by 1.5× → forced suggestion for analyst review</td>
-</tr>
-</tbody>
-</table>
-</section>
-<section id="why-1.5-the-mathematical-symmetry" class="level3" data-number="4.2">
-<h3 data-number="4.2" class="anchored" data-anchor-id="why-1.5-the-mathematical-symmetry"><span class="header-section-number">4.2</span> Why 1.5× — The Mathematical Symmetry</h3>
-<p>The 1.5 multiplier is not arbitrary — it mirrors the competition threshold divisor exactly:</p>
-<pre><code>Competition window  = winner ÷ 1.5  → candidates within 33% of winner
-FileUOM boost       = raw score × 1.5  → 50% increase
+<p><strong>Check 1 — FileUOM proximity check:</strong></p>
+<p>The engine looks up the FileUOM in the same candidate pool (DBSCAN thresholds and KnownProductUOMs). If the FileUOM candidate:</p>
+<ol type="1">
+<li>Is actually present in the candidate pool (has historical price data), <strong>and</strong></li>
+<li>Scores <strong>≥ 50% of the winner’s score</strong> (meets the same competition threshold), <strong>and</strong></li>
+<li>Is different from the engine’s top scorer</li>
+</ol>
+<p>…then it is flagged for analyst review. The FileUOM candidate appears in the suggestion list with a note explaining it came from the file label.</p>
+<pre><code>Winner score = 0.88  →  competition threshold = 0.88 × 0.50 = 0.44
 
-33% = 50% ÷ 1.5   (same constant, two sides of the same coin)</code></pre>
-<p>A FileUOM boosted by 50% is designed to cross exactly into the competition window — the boost is the precise inverse of the competition divisor. If the file label scores anywhere near the competition boundary, the 1.5× lift guarantees it surfaces as the top suggestion.</p>
+FileUOM candidate score = 0.50  →  0.50 ≥ 0.44  →  Check 1 passes
+FileUOM candidate score = 0.30  →  0.30 &lt; 0.44  →  Check 1 fails, ignored</code></pre>
+<p><strong>Check 2 — General competition:</strong></p>
+<p>Even if there is no FileUOM in the file, the same 50% threshold applies to every other candidate. If any non-winner UOM scores ≥ 50% of the winner, the row is flagged.</p>
+<p>Both checks use the <strong>same threshold</strong> (<code>winnerScore × 0.50</code>) — there is no separate gate or score multiplier. The FileUOM check is simply whether the file-labeled candidate specifically crosses that line.</p>
 <div class="callout callout-style-default callout-note callout-titled">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
@@ -2382,14 +2356,39 @@ Note
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p>These thresholds (0.30 minimum, 1.5× boost, 1.5 competition divisor) are <strong>tunable hyperparameters</strong>, not mathematically proven optima. They were chosen empirically as a reasonable starting point and should be revisited based on analyst acceptance/rejection rates over time.</p>
+<p><strong>Why 50%?</strong> The threshold is intentionally permissive. A runner-up at half the winner’s score still represents real statistical uncertainty — the engine is twice as confident in the winner, but that margin alone does not justify auto-assigning in a high-stakes data pipeline. The 50% value is a tunable hyperparameter and should be revisited based on analyst acceptance/rejection rates over time.</p>
 </div>
 </div>
+<section id="what-happens-when-fileuom-scores-below-the-threshold" class="level3" data-number="4.1">
+<h3 data-number="4.1" class="anchored" data-anchor-id="what-happens-when-fileuom-scores-below-the-threshold"><span class="header-section-number">4.1</span> What Happens When FileUOM Scores Below the Threshold</h3>
+<p>If the FileUOM candidate’s score is below <code>winnerScore × 0.50</code>, the file label is ignored entirely. A UOM that scores this low relative to the winner has essentially no statistical support, and is likely a garbage label or data entry error from the supplier.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 77%">
+<col style="width: 22%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>FileUOM score vs threshold</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>≥ winner × 0.50</td>
+<td>FileUOM candidate surfaced — analyst review triggered</td>
+</tr>
+<tr class="even">
+<td>&lt; winner × 0.50</td>
+<td>Ignored — insufficient statistical support</td>
+</tr>
+</tbody>
+</table>
 </section>
 </section>
 <section id="what-happens-to-the-row" class="level2" data-number="5">
 <h2 data-number="5" class="anchored" data-anchor-id="what-happens-to-the-row"><span class="header-section-number">5</span> What Happens to the Row</h2>
-<p>In both cases — competition or FileUOM conflict — the result is the same:</p>
+<p>In both cases — competition or FileUOM check — the result is the same:</p>
 <table class="caption-top table">
 <colgroup>
 <col style="width: 46%">
@@ -2459,10 +2458,10 @@ Note
 </tr>
 </tbody>
 </table>
-<p><strong>Winner = CS at 0.82</strong> → Competition threshold = <code>0.82 / 1.5 =</code> <strong>0.55</strong></p>
+<p><strong>Winner = CS at 0.82</strong> → Competition threshold = <code>0.82 × 0.50 =</code> <strong>0.41</strong></p>
 <ul>
-<li>BX scored <code>0.79</code> → <strong>above 0.55 → competition exists</strong> ✓</li>
-<li>EA scored <code>0.10</code> → below 0.55, not a competitor ✗</li>
+<li>BX scored <code>0.79</code> → <strong>above 0.41 → competition exists</strong> ✓</li>
+<li>EA scored <code>0.10</code> → below 0.41, not a competitor ✗</li>
 </ul>
 <div class="result-box">
 <p><strong>Result — Suggestion created:</strong> <code>isRecognized = false</code> · CS and BX both inserted into <code>UOMSuggestion</code> · CS is top suggestion (0.82), BX is second (0.79) · Analyst sees: <em>“We think CS/200 — but BX/100 is also plausible. You decide.”</em></p>
@@ -2493,17 +2492,17 @@ Note
 </tr>
 </tbody>
 </table>
-<p><strong>Winner = CS at 0.91</strong> → Competition threshold = <code>0.91 / 1.5 =</code> <strong>0.61</strong></p>
+<p><strong>Winner = CS at 0.91</strong> → Competition threshold = <code>0.91 × 0.50 =</code> <strong>0.455</strong></p>
 <ul>
-<li>EA scored <code>0.05</code> → <strong>below 0.61 → no competition</strong> ✗</li>
+<li>EA scored <code>0.05</code> → <strong>below 0.455 → no competition</strong> ✗</li>
 </ul>
 <div class="result-box">
 <p><strong>Result — Auto-recognized:</strong> <code>isRecognized = true</code> · <code>RecognizedUnitOfMeasureID = CS</code> written directly to <code>DataLineEnriched</code> · No suggestion created — row appears in Recognized tab · Analyst doesn’t need to do anything.</p>
 </div>
 </section>
-<section id="example-3-fileuom-boost" class="level2" data-number="8">
-<h2 data-number="8" class="anchored" data-anchor-id="example-3-fileuom-boost"><span class="header-section-number">8</span> Example 3 — FileUOM Boost</h2>
-<p><strong>File label disagrees with the engine’s top scorer.</strong></p>
+<section id="example-3-fileuom-check" class="level2" data-number="8">
+<h2 data-number="8" class="anchored" data-anchor-id="example-3-fileuom-check"><span class="header-section-number">8</span> Example 3 — FileUOM Check</h2>
+<p><strong>File label names a UOM that the engine’s scoring also considers plausible.</strong></p>
 <p><strong>Line:</strong> IV bags, PriceUOM = <code>$95.00</code>, FileUOM column = <strong><code>&quot;BX&quot;</code></strong></p>
 <table class="caption-top table">
 <thead>
@@ -2522,16 +2521,16 @@ Note
 <tr class="even">
 <td>BX</td>
 <td>$88 – $100</td>
-<td>0.40</td>
+<td>0.50</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Winner = CS at 0.88</strong> → Competition threshold = <code>0.88 / 1.5 =</code> <strong>0.59</strong></p>
-<p>BX scored <code>0.40</code> → below 0.59 → <strong>normally no competition</strong>. Without FileUOM, CS would be auto-assigned.</p>
-<p><strong>BUT</strong> — FileUOM = <code>&quot;BX&quot;</code>, and BX is a known candidate with score <code>0.40 ≥ 0.15</code>. BX gets boosted: <code>0.40 × 1.5 = 0.60</code>.</p>
+<p><strong>Winner = CS at 0.88</strong> → Competition threshold = <code>0.88 × 0.50 =</code> <strong>0.44</strong></p>
+<p>BX scored <code>0.50</code> → above 0.44 → <strong>competitive</strong>. The engine checks: is BX present in DBSCAN thresholds or KnownProductUOMs? Yes. Is it different from the winner? Yes. Is its score ≥ 50% of winner? Yes (<code>0.50 ≥ 0.44</code>). <strong>Check 1 passes.</strong></p>
 <div class="result-box">
-<p><strong>Result — Forced suggestion via FileUOM boost:</strong> <code>fileUomBoosted = true</code> → forced to suggestion · BX becomes <strong>top suggestion</strong>: <em>“FileUOM ‘BX’ found in candidate list. Raw score 0.40 boosted to 0.60. Auto-winner was CS — sent for analyst review.”</em> · CS is second suggestion · Analyst sees: <em>“File says BX, but our scoring says CS. Which is correct?”</em></p>
+<p><strong>Result — Suggestion via FileUOM check:</strong> <code>fileUomTriggered = true</code> → flagged for analyst review · BX and CS both inserted into <code>UOMSuggestion</code> sorted by score · BX reason: <em>“FileUOM ‘BX’ found in candidate list (DBSCAN or KnownProductUOMs). Score 0.500 is within 50% of winner score 0.880.”</em> · Analyst sees: <em>“File says BX, scoring also says BX is plausible. Which is correct?”</em></p>
 </div>
+<p>If BX had scored <code>0.30</code> instead, the check would fail (<code>0.30 &lt; 0.44</code>) — the file label would be silently ignored and CS would be auto-assigned with no suggestion.</p>
 </section>
 <section id="summary" class="level2" data-number="9">
 <h2 data-number="9" class="anchored" data-anchor-id="summary"><span class="header-section-number">9</span> Summary</h2>
@@ -2552,16 +2551,16 @@ Note
 <td>Auto-recognizes, no suggestion</td>
 </tr>
 <tr class="even">
-<td>Step 5: clear winner, no close runners-up</td>
+<td>Step 5: clear winner, no candidate ≥ 50% of winner</td>
 <td>Auto-recognizes, no suggestion</td>
 </tr>
 <tr class="odd">
-<td>Step 5: runner-up within 33% of winner</td>
+<td>Step 5: any runner-up ≥ 50% of winner</td>
 <td><strong>Suggestion — analyst picks</strong></td>
 </tr>
 <tr class="even">
-<td>Step 5: FileUOM disagrees with top scorer</td>
-<td><strong>Suggestion — analyst picks</strong></td>
+<td>Step 5: FileUOM candidate ≥ 50% of winner</td>
+<td><strong>Suggestion — FileUOM tagged in reason</strong></td>
 </tr>
 <tr class="odd">
 <td>Score below 0.30</td>
