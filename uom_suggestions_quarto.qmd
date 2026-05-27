@@ -95,6 +95,38 @@ The FileUOM candidate becomes the **top suggestion** shown first to the analyst,
 
 > *"The file said this — do you agree?"*
 
+### The 0.30 Minimum Gate
+
+The FileUOM boost only triggers if the FileUOM candidate's raw score is **≥ 0.30** — the same threshold used to consider any UOM "recognized" at all.
+
+```
+FILE_UOM_MIN_SCORE = 0.30
+```
+
+If FileUOM scores below 0.30, the engine ignores the file label entirely — because a UOM that scores below the recognition floor has no statistical support and is likely noise or a garbage label from the supplier.
+
+| FileUOM raw score | Result |
+|-------------------|--------|
+| < 0.30 | Ignored — no statistical support, label treated as noise |
+| ≥ 0.30 | Boosted by 1.5× → forced suggestion for analyst review |
+
+### Why 1.5× — The Mathematical Symmetry
+
+The 1.5 multiplier is not arbitrary — it mirrors the competition threshold divisor exactly:
+
+```
+Competition window  = winner ÷ 1.5  → candidates within 33% of winner
+FileUOM boost       = raw score × 1.5  → 50% increase
+
+33% = 50% ÷ 1.5   (same constant, two sides of the same coin)
+```
+
+A FileUOM boosted by 50% is designed to cross exactly into the competition window — the boost is the precise inverse of the competition divisor. If the file label scores anywhere near the competition boundary, the 1.5× lift guarantees it surfaces as the top suggestion.
+
+::: {.callout-note}
+These thresholds (0.30 minimum, 1.5× boost, 1.5 competition divisor) are **tunable hyperparameters**, not mathematically proven optima. They were chosen empirically as a reasonable starting point and should be revisited based on analyst acceptance/rejection rates over time.
+:::
+
 ## What Happens to the Row
 
 In both cases — competition or FileUOM conflict — the result is the same:
